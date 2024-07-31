@@ -4,6 +4,8 @@ const bodyParser = require('body-parser')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const auth = require('./root/auth')
+const OfRoot = require('./root/ofRoot')
+const StockRoot = require('./root/StockRoot')
 
 // require database connection
 const dbConnect = require('./db/dbConnect')
@@ -22,7 +24,7 @@ app.use((req, res, next) => {
 })
 // execute database connection
 dbConnect()
-const User = require('./db/userModel')
+const User = require('./models/userModel')
 
 // body parser configuration
 app.use(bodyParser.json())
@@ -32,6 +34,9 @@ app.get('/', (request, response, next) => {
   response.json({ message: 'Hey! This is your server response!' })
   next()
 })
+//------------------------------------------------------///
+app.use('/ofs', OfRoot.router)
+app.use('/stocks', StockRoot.router)
 
 // register endpoint
 app.post('/register', (request, response) => {
@@ -41,7 +46,7 @@ app.post('/register', (request, response) => {
     .then((hashedPassword) => {
       // create a new user instance and collect the data
       const user = new User({
-        email: request.body.email,
+        matricule: request.body.matricule,
         password: hashedPassword,
       })
 
@@ -74,7 +79,7 @@ app.post('/register', (request, response) => {
 // login endpoint
 app.post('/login', (request, response) => {
   // check if email exists
-  User.findOne({ email: request.body.email })
+  User.findOne({ matricule: request.body.matricule })
 
     // if email exists
     .then((user) => {
@@ -96,7 +101,7 @@ app.post('/login', (request, response) => {
           const token = jwt.sign(
             {
               userId: user._id,
-              userEmail: user.email,
+              userMatricule: user.matricule,
             },
             'RANDOM-TOKEN',
             { expiresIn: '24h' }
@@ -105,7 +110,7 @@ app.post('/login', (request, response) => {
           //   return success response
           response.status(200).send({
             message: 'Login Successful',
-            email: user.email,
+            matricule: user.matricule,
             token,
           })
         })
@@ -117,10 +122,10 @@ app.post('/login', (request, response) => {
           })
         })
     })
-    // catch error if email does not exist
+    // catch error if matricule does not exist
     .catch((e) => {
       response.status(404).send({
-        message: 'Email not found',
+        message: 'Matricule not found',
         e,
       })
     })
@@ -134,4 +139,5 @@ app.get('/free-endpoint', (request, response) => {
 app.get('/auth-endpoint', auth, (request, response) => {
   response.json({ message: 'You are authorized to access me' })
 })
+
 module.exports = app
